@@ -1,0 +1,16 @@
+
+{
+  "name": "doctor-appointment-platform",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/patient",
+    "apps/doctor",
+    "apps/backend"
+  ],
+  "scripts": {
+    "patient": "npm run start --workspace=apps/patient",
+    "doctor": "npm run start --workspace=apps/doctor",
+    "backend": "npm run dev --workspace=apps/backend"
+  }
+}
