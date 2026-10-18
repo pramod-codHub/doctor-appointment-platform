@@ -1,4 +1,6 @@
 
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useState } from "react";
 import {
   View,
@@ -9,23 +11,17 @@ import {
   Platform,
   ScrollView,
 } from "react-native";
-
+import { RootStackParamList } from "../navigation/types";
 export default function RegistrationScreen() {
   const [name, setName] = useState("");
   const [mobile, setMobile] = useState("");
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const handleNext = () => {
-    if (!name.trim()) {
-      alert("Please enter your full name");
-      return;
-    }
-
-    if (!/^[6-9]\d{9}$/.test(mobile)) {
-      alert("Please enter a valid 10-digit Indian mobile number");
-      return;
-    }
-
-    alert("Registration details are valid!");
+    navigation.navigate("OTP", {
+    name: name.trim(),
+    mobile,
+});
   };
 
   return (
