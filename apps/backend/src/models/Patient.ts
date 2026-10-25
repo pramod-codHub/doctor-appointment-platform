@@ -1,8 +1,13 @@
+
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface IPatient extends Document {
   name: string;
   mobile: string;
+  isMobileVerified: boolean;
+  otpHash?: string;
+  otpExpiresAt?: Date;
+  otpAttempts: number;
 }
 
 const patientSchema = new Schema<IPatient>(
@@ -17,6 +22,22 @@ const patientSchema = new Schema<IPatient>(
       required: true,
       unique: true,
       trim: true,
+    },
+    isMobileVerified: {
+      type: Boolean,
+      default: false,
+    },
+    otpHash: {
+      type: String,
+      select: false,
+    },
+    otpExpiresAt: {
+      type: Date,
+      select: false,
+    },
+    otpAttempts: {
+      type: Number,
+      default: 0,
     },
   },
   {

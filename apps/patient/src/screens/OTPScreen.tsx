@@ -6,28 +6,80 @@ import {
   TextInput,
   Pressable,
   Alert,
+  ActivityIndicator,
 } from "react-native";
+import axios from "axios";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import API_BASE_URL from "../config/api";
 
 type Props = NativeStackScreenProps<RootStackParamList, "OTP">;
 
 export default function OTPScreen({ route }: Props) {
   const { name, mobile } = route.params;
+
   const [otp, setOtp] = useState("");
+  const [loading, setLoading] = useState(false);
+
   const navigation =
-  useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
-const handleVerify = () => {
-  if (!/^\d{6}$/.test(otp)) {
-    Alert.alert("Invalid OTP", "Please enter a 6-digit OTP.");
-    return;
-  }
+  const handleVerify = async () => {
+    if (!/^\d{6}$/.test(otp)) {
+      Alert.alert("Invalid OTP", "Please enter a 6-digit OTP.");
+      return;
+    }
 
-  navigation.replace("Dashboard");
-};
+    setLoading(true);
+
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/otp/verify`,
+        {
+          mobile,
+          otp,
+        }
+      );
+
+      if (response.data.success) {
+        Alert.alert(
+          "Success",
+          "Your mobile number has been verified!",
+          [
+            {
+              text: "Continue",
+              onPress: () => navigation.replace("Dashboard"),
+            },
+          ]
+        );
+      } else {
+        Alert.alert(
+          "Verification failed",
+          response.data.message || "Unable to verify OTP."
+        );
+      }
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        const message = error.response?.data?.message;
+
+        Alert.alert(
+          "Verification failed",
+          typeof message === "string"
+            ? message
+            : "Unable to connect to the server. Please try again."
+        );
+      } else {
+        Alert.alert(
+          "Error",
+          "An unexpected error occurred. Please try again."
+        );
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <View className="flex-1 justify-center bg-white px-6">
@@ -58,19 +110,26 @@ const handleVerify = () => {
         }
         keyboardType="number-pad"
         maxLength={6}
+        editable={!loading}
       />
 
       <Pressable
-        className="mt-6 items-center rounded-xl bg-blue-600 px-4 py-4 active:bg-blue-700"
+        className={`mt-6 items-center rounded-xl px-4 py-4 ${loading ? "bg-blue-400" : "bg-blue-600 active:bg-blue-700"
+          }`}
         onPress={handleVerify}
+        disabled={loading}
       >
-        <Text className="text-base font-bold text-white">
-          Verify & Continue
-        </Text>
+        {loading ? (
+          <ActivityIndicator color="#FFFFFF" />
+        ) : (
+          <Text className="text-base font-bold text-white">
+            Verify & Continue
+          </Text>
+        )}
       </Pressable>
 
       <Text className="mt-5 text-center text-sm text-gray-500">
-        Didn't receive the OTP? Resend functionality will be added later.
+        For development, use the OTP printed in your backend terminal.
       </Text>
     </View>
   );
