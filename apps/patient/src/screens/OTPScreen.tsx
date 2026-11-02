@@ -14,6 +14,7 @@ import type { RootStackParamList } from "../navigation/types";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import API_BASE_URL from "../config/api";
+import * as SecureStore from "expo-secure-store";
 
 type Props = NativeStackScreenProps<RootStackParamList, "OTP">;
 
@@ -43,7 +44,20 @@ export default function OTPScreen({ route }: Props) {
         }
       );
 
+
       if (response.data.success) {
+        const token = response.data.token;
+
+        if (typeof token !== "string" || !token) {
+          Alert.alert(
+            "Verification error",
+            "OTP was verified, but the authentication token was not received."
+          );
+          return;
+        }
+
+        await SecureStore.setItemAsync("authToken", token);
+
         Alert.alert(
           "Success",
           "Your mobile number has been verified!",
@@ -54,7 +68,8 @@ export default function OTPScreen({ route }: Props) {
             },
           ]
         );
-      } else {
+      }
+      else {
         Alert.alert(
           "Verification failed",
           response.data.message || "Unable to verify OTP."
