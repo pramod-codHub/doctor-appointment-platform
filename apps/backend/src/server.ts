@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import { connectDB } from "./config/db";
 import patientRoutes from "./routes/patientRoutes";
 import otpRoutes from "./routes/otpRoutes";
+import clinicRoutes from "./routes/clinicRoutes";
 import { authenticateToken } from "./middleware/authMiddleware";
 
 
@@ -26,6 +27,7 @@ app.get("/api/health", (_req, res) => {
 
 app.use("/api/patients", patientRoutes);
 app.use("/api/otp", otpRoutes);
+app.use("/api/clinics", clinicRoutes);
 
 app.get("/api/protected", authenticateToken, (_req, res) => {
   res.status(200).json({
