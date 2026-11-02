@@ -8,6 +8,8 @@ export interface IPatient extends Document {
   otpHash?: string;
   otpExpiresAt?: Date;
   otpAttempts: number;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const patientSchema = new Schema<IPatient>(
