@@ -447,4 +447,50 @@ router.put("/:id", async (req, res) => {
   }
 });
 
+// PATCH: Deactivate a doctor
+router.patch("/:id/deactivate", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // 1. Validate doctor ID
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid doctor ID.",
+      });
+    }
+
+    // 2. Find active doctor
+    const doctor = await Doctor.findOne({
+      _id: id,
+      isActive: true,
+    });
+
+    if (!doctor) {
+      return res.status(404).json({
+        success: false,
+        message: "Doctor not found or already inactive.",
+      });
+    }
+
+    // 3. Deactivate doctor
+    doctor.isActive = false;
+    await doctor.save();
+
+    // 4. Return response
+    return res.status(200).json({
+      success: true,
+      message: "Doctor deactivated successfully.",
+      doctor,
+    });
+  } catch (error) {
+    console.error("Doctor deactivation error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to deactivate doctor.",
+    });
+  }
+});
+
 export default router;
