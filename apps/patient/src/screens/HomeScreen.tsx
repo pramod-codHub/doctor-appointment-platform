@@ -41,7 +41,7 @@ export default function HomeScreen() {
         {/* Log In button */}
         <Pressable
           className="items-center rounded-xl border border-blue-600 bg-white px-4 py-4"
-          onPress={() => console.log("Log In pressed")}
+          onPress={() => navigation.navigate("Login")}
         >
           <Text className="text-base font-bold text-blue-700">
             Log In

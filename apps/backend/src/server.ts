@@ -7,6 +7,8 @@ import otpRoutes from "./routes/otpRoutes";
 import clinicRoutes from "./routes/clinicRoutes";
 import { authenticateToken } from "./middleware/authMiddleware";
 import doctorRoutes from "./routes/doctorRoutes";
+import availabilityRoutes from "./routes/availabilityRoutes";
+import appointmentRoutes from "./routes/appointmentRoutes";
 
 
 // Explicitly load apps/backend/.env.
@@ -30,7 +32,8 @@ app.use("/api/patients", patientRoutes);
 app.use("/api/otp", otpRoutes);
 app.use("/api/clinics", clinicRoutes);
 app.use("/api/doctors", doctorRoutes);
-
+app.use("/api/availability", availabilityRoutes);
+app.use("/api/appointments", appointmentRoutes);
 app.get("/api/protected", authenticateToken, (_req, res) => {
   res.status(200).json({
     success: true,

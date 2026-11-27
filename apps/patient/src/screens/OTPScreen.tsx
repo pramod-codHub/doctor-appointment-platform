@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+
 import {
   View,
   Text,
@@ -8,24 +9,30 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
+
 import axios from "axios";
+import * as SecureStore from "expo-secure-store";
+
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/types";
+
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+
 import API_BASE_URL from "../config/api";
-import * as SecureStore from "expo-secure-store";
 
 type Props = NativeStackScreenProps<RootStackParamList, "OTP">;
 
 export default function OTPScreen({ route }: Props) {
-  const { name, mobile } = route.params;
+  const { name, mobile, flow = "registration" } = route.params;
 
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
 
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  const isLogin = flow === "login";
 
   const handleVerify = async () => {
     if (!/^\d{6}$/.test(otp)) {
@@ -44,7 +51,6 @@ export default function OTPScreen({ route }: Props) {
         }
       );
 
-
       if (response.data.success) {
         const token = response.data.token;
 
@@ -56,11 +62,14 @@ export default function OTPScreen({ route }: Props) {
           return;
         }
 
+        // Save the fresh JWT securely
         await SecureStore.setItemAsync("authToken", token);
 
         Alert.alert(
           "Success",
-          "Your mobile number has been verified!",
+          isLogin
+            ? "Login successful! Welcome back."
+            : "Your mobile number has been verified!",
           [
             {
               text: "Continue",
@@ -68,8 +77,7 @@ export default function OTPScreen({ route }: Props) {
             },
           ]
         );
-      }
-      else {
+      } else {
         Alert.alert(
           "Verification failed",
           response.data.message || "Unable to verify OTP."
@@ -98,16 +106,18 @@ export default function OTPScreen({ route }: Props) {
 
   return (
     <View className="flex-1 justify-center bg-white px-6">
+
       <View className="mb-8 h-20 w-20 items-center justify-center self-center rounded-full bg-blue-100">
         <Text className="text-4xl">📱</Text>
       </View>
 
       <Text className="text-center text-3xl font-bold text-blue-900">
-        Verify Your Number
+        {isLogin ? "Login Verification" : "Verify Your Number"}
       </Text>
 
       <Text className="mt-4 text-center text-base leading-6 text-gray-500">
-        Hi {name}, enter the 6-digit OTP sent to{"\n"}
+        {name ? `Hi ${name}, ` : ""}
+        enter the 6-digit OTP sent to{"\n"}
         +91 {mobile}
       </Text>
 
@@ -129,7 +139,9 @@ export default function OTPScreen({ route }: Props) {
       />
 
       <Pressable
-        className={`mt-6 items-center rounded-xl px-4 py-4 ${loading ? "bg-blue-400" : "bg-blue-600 active:bg-blue-700"
+        className={`mt-6 items-center rounded-xl px-4 py-4 ${loading
+          ? "bg-blue-400"
+          : "bg-blue-600 active:bg-blue-700"
           }`}
         onPress={handleVerify}
         disabled={loading}
@@ -138,7 +150,7 @@ export default function OTPScreen({ route }: Props) {
           <ActivityIndicator color="#FFFFFF" />
         ) : (
           <Text className="text-base font-bold text-white">
-            Verify & Continue
+            {isLogin ? "Login & Continue" : "Verify & Continue"}
           </Text>
         )}
       </Pressable>
@@ -146,6 +158,7 @@ export default function OTPScreen({ route }: Props) {
       <Text className="mt-5 text-center text-sm text-gray-500">
         For development, use the OTP printed in your backend terminal.
       </Text>
+
     </View>
   );
 }

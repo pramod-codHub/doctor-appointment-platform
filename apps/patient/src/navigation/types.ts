@@ -2,9 +2,11 @@
 export type RootStackParamList = {
   Home: undefined;
   Registration: undefined;
-   OTP: {
-    name: string;
+  Login: undefined;
+  OTP: {
+    name?: string;
     mobile: string;
+    flow?: "registration" | "login";
   };
   Dashboard: undefined;
 };
