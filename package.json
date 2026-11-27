@@ -8,6 +8,10 @@
     "apps/doctor",
     "apps/backend"
   ],
+  "devDependencies": {
+    "@types/react": "~19.2.2",
+    "react": "19.2.3"
+  },
   "scripts": {
     "patient": "npm run start --workspace=apps/patient",
     "doctor": "npm run start --workspace=apps/doctor",

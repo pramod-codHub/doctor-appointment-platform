@@ -1,6 +1,11 @@
 
 import { Router } from "express";
-import { createHash, randomInt, timingSafeEqual } from "node:crypto";
+import {
+  createHash,
+  randomInt,
+  timingSafeEqual,
+} from "node:crypto";
+
 import Patient from "../models/Patient";
 import { generateAuthToken } from "../utils/jwt";
 
@@ -8,10 +13,16 @@ const router = Router();
 
 const OTP_EXPIRY_MINUTES = 5;
 
+// ========================================
+// SEND OTP
+// Works for both new and existing patients
+// ========================================
+
 router.post("/send", async (req, res) => {
   try {
     const { mobile } = req.body;
 
+    // Validate mobile number
     if (
       typeof mobile !== "string" ||
       !/^\d{10}$/.test(mobile)
@@ -22,6 +33,7 @@ router.post("/send", async (req, res) => {
       });
     }
 
+    // Find existing patient
     const patient = await Patient.findOne({ mobile });
 
     if (!patient) {
@@ -31,31 +43,28 @@ router.post("/send", async (req, res) => {
       });
     }
 
-    if (patient.isMobileVerified) {
-      return res.status(400).json({
-        success: false,
-        message: "This mobile number is already verified.",
-      });
-    }
-
-    // Generate a cryptographically secure six-digit OTP.
+    // Generate a secure six-digit OTP
     const otp = randomInt(100000, 1000000).toString();
 
-    // Store a hash, not the original OTP.
+    // Store OTP hash instead of original OTP
     patient.otpHash = createHash("sha256")
       .update(otp)
       .digest("hex");
 
+    // Set OTP expiry time
     patient.otpExpiresAt = new Date(
       Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000
     );
 
+    // Reset OTP attempts
     patient.otpAttempts = 0;
 
     await patient.save();
 
-    // Development only: never log OTPs in production.
-    console.log(`[DEV OTP] Mobile: ${mobile}, OTP: ${otp}`);
+    // Development only: print OTP in terminal
+    console.log(
+      `[DEV OTP] Mobile: ${mobile}, OTP: ${otp}`
+    );
 
     return res.status(200).json({
       success: true,
@@ -72,11 +81,16 @@ router.post("/send", async (req, res) => {
   }
 });
 
+// ========================================
+// VERIFY OTP
+// Works for both registration and login
+// ========================================
 
 router.post("/verify", async (req, res) => {
   try {
     const { mobile, otp } = req.body;
 
+    // Validate mobile and OTP
     if (
       typeof mobile !== "string" ||
       !/^\d{10}$/.test(mobile) ||
@@ -89,6 +103,7 @@ router.post("/verify", async (req, res) => {
       });
     }
 
+    // Find patient and retrieve hidden OTP fields
     const patient = await Patient.findOne({ mobile }).select(
       "+otpHash +otpExpiresAt"
     );
@@ -100,13 +115,7 @@ router.post("/verify", async (req, res) => {
       });
     }
 
-    if (patient.isMobileVerified) {
-      return res.status(400).json({
-        success: false,
-        message: "Mobile number is already verified.",
-      });
-    }
-
+    // Check whether OTP exists
     if (!patient.otpHash || !patient.otpExpiresAt) {
       return res.status(400).json({
         success: false,
@@ -114,10 +123,12 @@ router.post("/verify", async (req, res) => {
       });
     }
 
+    // Check OTP expiry
     if (patient.otpExpiresAt.getTime() <= Date.now()) {
       patient.otpHash = undefined;
       patient.otpExpiresAt = undefined;
       patient.otpAttempts = 0;
+
       await patient.save();
 
       return res.status(400).json({
@@ -126,6 +137,7 @@ router.post("/verify", async (req, res) => {
       });
     }
 
+    // Check maximum OTP attempts
     if (patient.otpAttempts >= 5) {
       return res.status(429).json({
         success: false,
@@ -133,16 +145,28 @@ router.post("/verify", async (req, res) => {
       });
     }
 
+    // Generate hash for submitted OTP
     const submittedHash = createHash("sha256")
       .update(otp)
       .digest("hex");
 
-    const storedHashBuffer = Buffer.from(patient.otpHash, "hex");
-    const submittedHashBuffer = Buffer.from(submittedHash, "hex");
+    const storedHashBuffer = Buffer.from(
+      patient.otpHash,
+      "hex"
+    );
 
+    const submittedHashBuffer = Buffer.from(
+      submittedHash,
+      "hex"
+    );
+
+    // Compare OTP hashes safely
     const isOtpValid =
       storedHashBuffer.length === submittedHashBuffer.length &&
-      timingSafeEqual(storedHashBuffer, submittedHashBuffer);
+      timingSafeEqual(
+        storedHashBuffer,
+        submittedHashBuffer
+      );
 
     if (!isOtpValid) {
       patient.otpAttempts += 1;
@@ -165,18 +189,28 @@ router.post("/verify", async (req, res) => {
       });
     }
 
+    // OTP verified successfully
+    // For new patients, mark mobile as verified.
+    // For existing patients, keep it verified.
+
     patient.isMobileVerified = true;
+
+    // Clear OTP information after successful verification
     patient.otpHash = undefined;
     patient.otpExpiresAt = undefined;
     patient.otpAttempts = 0;
 
     await patient.save();
-    const token = generateAuthToken(patient._id.toString());
+
+    // Generate a fresh JWT token
+    const token = generateAuthToken(
+      patient._id.toString()
+    );
 
     return res.status(200).json({
       success: true,
       message: "Mobile number verified successfully.",
-      token
+      token,
     });
   } catch (error) {
     console.error("OTP verification error:", error);
@@ -187,6 +221,5 @@ router.post("/verify", async (req, res) => {
     });
   }
 });
-
 
 export default router;
